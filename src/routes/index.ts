@@ -1,4 +1,4 @@
-import { getBodyBuffer } from '@/utils/body';
+import { getBodyBuffer, rewriteLinks } from '@/utils/body';
 import {
   getProxyHeaders,
   getAfterResponseHeaders,
@@ -10,22 +10,43 @@ import {
   setTokenHeader,
 } from '@/utils/turnstile';
 
-export default defineEventHandler(async (event) => {
+export const app = createApp();
+
+const router = createRouter();
+
+app.use(router);
+
+router.get('/', defineEventHandler(async (event) => {
   // handle cors, if applicable
   if (isPreflightRequest(event)) return handleCors(event, {});
-
+  
   // parse destination URL
-  const destination = getQuery<{ destination?: string }>(event).destination;
-  if (!destination)
+  const host = event.web?.request?.headers?.get('host');
+  if (!host)
     return await sendJson({
       event,
-      status: 200,
+      status: 400,
       data: {
-        message: `Proxy is working as expected (v${
-          useRuntimeConfig(event).version
-        })`,
+        error: 'Invalid host',
       },
     });
+
+  // get first subdomain
+  const subdomain = host.split('.').at(0);
+  if (!subdomain)
+    return await sendJson({
+      event,
+      status: 400,
+      data: {
+        error: 'Invalid subdomain',
+      },
+    });
+
+  // const destination = getQuery<{ destination?: string }>(event).destination;
+  const result = event.context.cloudflare.env.D1.prepare('SELECT * FROM subdomains WHERE subdomain = ?')
+  .bind(subdomain)
+  .first();
+
 
   if (!(await isAllowedToMakeRequest(event)))
     return await sendJson({
@@ -40,6 +61,8 @@ export default defineEventHandler(async (event) => {
   const body = await getBodyBuffer(event);
   const token = await createTokenIfNeeded(event);
 
+  const destination = "https://www.example.com"
+
   // proxy
   try {
     await specificProxyRequest(event, destination, {
@@ -49,14 +72,20 @@ export default defineEventHandler(async (event) => {
         headers: getProxyHeaders(event.headers),
         body,
       },
-      onResponse(outputEvent, response) {
+      async onResponse(outputEvent, response) {
         const headers = getAfterResponseHeaders(response.headers, response.url);
         setResponseHeaders(outputEvent, headers);
         if (token) setTokenHeader(event, token);
+
+        // parse html and rewrite links if any
+        if (response.headers.get('content-type')?.includes('text/html')) {
+          await rewriteLinks(outputEvent, response);
+        }
       },
     });
   } catch (e) {
     console.log('Error fetching', e);
     throw e;
   }
-});
+})
+);

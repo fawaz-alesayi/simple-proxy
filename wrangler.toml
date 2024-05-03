@@ -1,4 +1,11 @@
-name = "simple-proxy"
-main = "./.output/server/index.mjs"
+name = "preview-proxy"
+main = ".output/server/index.mjs"
 workers_dev = true
-compatibility_date = "2022-09-10"
+compatibility_date = "2024-01-01"
+keep_vars = true
+compatibility_flags = [ "nodejs_compat" ]
+
+[[d1_databases]]
+binding = "D1" # i.e. available in your Worker on env.DB
+database_name = "preview-proxy"
+database_id = "5793361c-2069-4574-b32b-5130da9313ea"

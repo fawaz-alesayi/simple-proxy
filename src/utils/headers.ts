@@ -1,3 +1,15 @@
+// import { HeaderGenerator, PRESETS } from 'header-generator';
+
+
+// const headerGenerator = new HeaderGenerator({
+//   browserListQuery: PRESETS.MODERN_DESKTOP.browserListQuery,
+//   // @ts-ignore
+//   operatingSystems: PRESETS.MODERN_WINDOWS.operatingSystems,
+// });
+
+// const proxyHeaders = headerGenerator.getHeaders();
+
+
 const headerMap: Record<string, string> = {
   'X-Cookie': 'Cookie',
   'X-Referer': 'Referer',
@@ -6,6 +18,8 @@ const headerMap: Record<string, string> = {
   'X-X-Real-Ip': 'X-Real-Ip',
 };
 
+// Some headers are added by Cloudflare and other services 
+// Should not be forwarded to the origin to avoid detection
 const blacklistedHeaders = [
   'cf-connecting-ip',
   'cf-worker',
@@ -37,11 +51,9 @@ function copyHeader(
 export function getProxyHeaders(headers: Headers): Headers {
   const output = new Headers();
 
-  // default user agent
-  output.set(
-    'User-Agent',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:93.0) Gecko/20100101 Firefox/93.0',
-  );
+  // Object.entries(proxyHeaders).forEach((entry) => {
+  //   output.set(entry[0], entry[1]);
+  // });
 
   Object.entries(headerMap).forEach((entry) => {
     copyHeader(headers, output, entry[0], entry[1]);
@@ -62,8 +74,11 @@ export function getAfterResponseHeaders(
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Expose-Headers': '*',
+    'Access-Control-Allow-Headers': '*',
     Vary: 'Origin',
     'X-Final-Destination': finalUrl,
+    'Content-Security-Policy': '',
+    'X-Frame-Options': 'ALLOWALL',
   };
 }
 

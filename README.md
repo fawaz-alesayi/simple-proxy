@@ -1,7 +1,6 @@
-# simple-proxy
+# simple-iframe-proxy
 
-Simple reverse proxy to bypass CORS, used by [movie-web](https://movie-web.app).
-Read the docs at https://docs.movie-web.app/proxy/introduction
+A simple proxy specialized in loading any website in an iframe's.
 
 ---
 
@@ -11,6 +10,11 @@ Read the docs at https://docs.movie-web.app/proxy/introduction
  - bypass CORS - always allows browser to send requests through it
  - secure it with turnstile - prevent bots from using your proxy
 
+ Special for this fork:
+ - Static link rewriting - Rewrites all links in the returned HTML to point to this proxy.
+ - Relative asset forwarding - adds a `<base>` element that points to the proxy url.
+ - Dynamic asset forwarding - adds a Service Worker that redirects all dynamically fetched assets to the proxy url
+
 > [!WARNING]
 > Turnstile integration only works properly with cloudflare workers as platform
 
@@ -18,4 +22,5 @@ Read the docs at https://docs.movie-web.app/proxy/introduction
  - cloudflare workers
  - AWS lambda
  - nodejs
+ - bunjs
  - netlify edge functions
